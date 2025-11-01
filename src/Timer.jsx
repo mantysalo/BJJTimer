@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import { PlayFill, StopFill, ArrowCounterclockwise, DashLg, PlusLg, Infinity, ClockFill } from 'react-bootstrap-icons';
+import { PlayFill, StopFill, ArrowCounterclockwise, DashLg, PlusLg } from 'react-bootstrap-icons';
 import './Timer.css';
 import Settings from './components/Settings';
 import { useTimer } from './hooks/useTimer';
@@ -9,7 +9,7 @@ const Timer = () => {
     const { state, actions, formatters, computed } = useTimer();
 
     return (
-        <Container fluid id="timer" className={computed.isRestPhase ? 'rest-phase' : 'round-phase'}>
+        <Container fluid id="timer" className="round-phase">
             <Settings />
             <Row className="justify-content-center my-0">
                 <Col md="auto">
@@ -27,13 +27,32 @@ const Timer = () => {
             </Row>
             <Row className="justify-content-center my-0">
                 <Col md="auto">
-                    <div id="display" className={computed.isEndingSoon ? 'ending-soon' : ''}>
-                        {formatters.formatTime(Math.max(0, state.timeLeft))}
+                    <div className="d-flex align-items-center gap-2">
+                        <Button 
+                            variant="outline-secondary" 
+                            size="sm" 
+                            onClick={() => actions.changeCurrentTime(-1)}
+                            className="d-inline-flex align-items-center"
+                        >
+                            <DashLg />
+                        </Button>
+                        <div id="display" className={computed.isEndingSoon ? 'ending-soon' : ''}>
+                            {formatters.formatTime(Math.max(0, state.timeLeft))}
+                        </div>
+                        <Button 
+                            variant="outline-secondary" 
+                            size="sm" 
+                            onClick={() => actions.changeCurrentTime(1)}
+                            className="d-inline-flex align-items-center"
+                        >
+                            <PlusLg />
+                        </Button>
                     </div>
                 </Col>
-            </Row>            <Row className="justify-content-center my-2">
+            </Row>
+            <Row className="justify-content-center my-2">
                 <Col xs={12} lg={10} xl={8} className="mx-auto">
-                    <div className="d-flex flex-column flex-sm-row justify-content-center align-items-center gap-4">
+                    <div className="d-flex justify-content-center align-items-center gap-4">
                         <div className="timer-control-group">
                             <label className="me-2">Duration:</label>
                             <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(-30)} className="d-inline-flex align-items-center">
@@ -41,26 +60,6 @@ const Timer = () => {
                             </Button>
                             <span className="mx-2">{formatters.formatTime(state.roundTime)}</span>
                             <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(30)} className="d-inline-flex align-items-center">
-                                <PlusLg />
-                            </Button>
-                        </div>
-                        <div className="timer-control-group">
-                            <label className="me-2">Rest:</label>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeRestTime(-10)} className="d-inline-flex align-items-center">
-                                <DashLg />
-                            </Button>
-                            <span className="mx-2">{formatters.formatTime(state.restTime)}</span>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeRestTime(10)} className="d-inline-flex align-items-center">
-                                <PlusLg />
-                            </Button>
-                        </div>
-                        <div className="timer-control-group">
-                            <label className="me-2">Rounds:</label>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeTotalRounds(-1)} className="d-inline-flex align-items-center">
-                                <DashLg />
-                            </Button>
-                            <span className="mx-2">{state.totalRounds === 0 ? <Infinity /> : state.totalRounds}</span>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeTotalRounds(1)} className="d-inline-flex align-items-center">
                                 <PlusLg />
                             </Button>
                         </div>
@@ -73,13 +72,6 @@ const Timer = () => {
                             <ArrowCounterclockwise className="me-1" /> Reset
                         </Button>
                     </div>
-                    {state.finishTime && state.totalRounds > 0 && (
-                        <div className="finish-time-container mt-3">
-                            <ClockFill className="me-1" size={14} />
-                            <span className="finish-time-label">Finish at:</span>
-                            <span className="finish-time">{formatters.formatCurrentTime(state.finishTime)}</span>
-                        </div>
-                    )}
                 </Col>
             </Row>
         </Container>

@@ -4,12 +4,10 @@ import {
   TIMER_CONSTANTS,
   getCurrentPhaseDuration,
   shouldTransitionPhase,
-  getNextPhase,
   createPhaseTransition,
-  validateSettings
-} from './TimerState';
-import { AudioManager } from './AudioManager';
-import { calculateFinishTime } from './FinishTimeCalculator';
+  validateSettings,
+} from "./TimerState";
+import { AudioManager } from "./AudioManager";
 
 /**
  * Core timer logic class
@@ -17,13 +15,9 @@ import { calculateFinishTime } from './FinishTimeCalculator';
  */
 export class TimerLogic {
   constructor(initialSettings = {}) {
-    const { roundTime, restTime, totalRounds } = validateSettings(
-      initialSettings.roundTime || 5 * 60 * 1000,
-      initialSettings.restTime || 20 * 1000,
-      initialSettings.totalRounds || 0
-    );
+    const { roundTime } = validateSettings(initialSettings.roundTime || 5 * 60 * 1000);
 
-    this.state = createInitialState(roundTime, restTime, totalRounds);
+    this.state = createInitialState(roundTime);
     this.audioManager = AudioManager.getInstance();
     this.subscribers = new Set();
     this.intervalId = null;
@@ -43,16 +37,15 @@ export class TimerLogic {
    * Notify all subscribers of state change
    */
   notifySubscribers() {
-    this.subscribers.forEach(callback => callback(this.getState()));
+    this.subscribers.forEach((callback) => callback(this.getState()));
   }
 
   /**
-   * Get current state with calculated finish time
+   * Get current state
    */
   getState() {
     return {
       ...this.state,
-      finishTime: calculateFinishTime(this.state)
     };
   }
 
@@ -60,19 +53,15 @@ export class TimerLogic {
    * Update timer settings
    */
   updateSettings(newSettings) {
-    const validated = validateSettings(
-      newSettings.roundTime ?? this.state.roundTime,
-      newSettings.restTime ?? this.state.restTime,
-      newSettings.totalRounds ?? this.state.totalRounds
-    );
+    const validated = validateSettings(newSettings.roundTime ?? this.state.roundTime);
 
     this.state = {
       ...this.state,
-      ...validated
+      ...validated,
     };
 
-    // Update timeLeft if idle and roundTime changed
-    if (this.state.phase === TIMER_PHASES.IDLE && this.state.currentRound === 0) {
+    // Update timeLeft if idle
+    if (this.state.phase === TIMER_PHASES.IDLE) {
       this.state.timeLeft = validated.roundTime;
     }
 
@@ -91,12 +80,11 @@ export class TimerLogic {
     // Capture precise start time immediately
     const now = Date.now();
 
-    if (this.state.phase === TIMER_PHASES.IDLE && this.state.currentRound === 0) {
-      // Starting fresh - begin with ready phase
-      this.transitionToPhase(TIMER_PHASES.READY);
+    if (this.state.phase === TIMER_PHASES.IDLE) {
+      // Starting fresh - begin directly with work phase
+      this.transitionToPhase(TIMER_PHASES.WORK);
       // Override the startTime from transitionToPhase with our precise timestamp
       this.state.startTime = now;
-      this.audioManager.playReady();
     } else {
       // Resuming - recalculate start time based on current timeLeft with precise timing
       const currentPhaseDuration = getCurrentPhaseDuration(this.state);
@@ -129,11 +117,7 @@ export class TimerLogic {
    */
   reset() {
     this.stopTicking();
-    this.state = createInitialState(
-      this.state.roundTime,
-      this.state.restTime,
-      this.state.totalRounds
-    );
+    this.state = createInitialState(this.state.roundTime);
     this.notifySubscribers();
   }
   /**
@@ -150,6 +134,24 @@ export class TimerLogic {
     } else {
       this.start();
     }
+  }
+
+  /**
+   * Adjust current time by a delta (in milliseconds)
+   */
+  adjustCurrentTime(deltaMs) {
+    const currentPhaseDuration = getCurrentPhaseDuration(this.state);
+    const newTimeLeft = Math.min(Math.max(0, this.state.timeLeft + deltaMs), currentPhaseDuration);
+
+    this.state.timeLeft = newTimeLeft;
+
+    // If running, adjust the startTime to maintain the new timeLeft
+    if (this.state.isRunning) {
+      const now = Date.now();
+      this.state.startTime = now - (currentPhaseDuration - newTimeLeft);
+    }
+
+    this.notifySubscribers();
   }
 
   /**
@@ -201,7 +203,7 @@ export class TimerLogic {
     this.checkAudioCues();
 
     // Throttle UI updates to reduce CPU usage (update UI every 100ms)
-    const shouldNotify = !this.lastNotifyTime || (now - this.lastNotifyTime) >= 100;
+    const shouldNotify = !this.lastNotifyTime || now - this.lastNotifyTime >= 100;
     if (shouldNotify) {
       this.lastNotifyTime = now;
       this.notifySubscribers();
@@ -211,22 +213,16 @@ export class TimerLogic {
    * Check and play audio cues based on current state
    */
   checkAudioCues() {
-    const { timeLeft, phase, readySoundPlayed, soonSoundPlayed } = this.state;
+    const { timeLeft, phase, soonSoundPlayed } = this.state;
 
-    // Play "ready" sound towards end of rest period
-    if (phase === TIMER_PHASES.REST &&
-        timeLeft <= TIMER_CONSTANTS.READY_TIME &&
-        !readySoundPlayed) {
-      this.audioManager.playReady();
-      this.state.readySoundPlayed = true;
-    }
-
-    // Play "soon" sound towards end of work round
+    // Play "soon" sound towards end of timer
     // Use a time window to ensure we don't miss the exact moment
-    if (phase === TIMER_PHASES.WORK &&
-        timeLeft <= TIMER_CONSTANTS.SOON_TIME &&
-        timeLeft > (TIMER_CONSTANTS.SOON_TIME - TIMER_CONSTANTS.RENDER_RATE * 2) &&
-        !soonSoundPlayed) {
+    if (
+      phase === TIMER_PHASES.WORK &&
+      timeLeft <= TIMER_CONSTANTS.SOON_TIME &&
+      timeLeft > TIMER_CONSTANTS.SOON_TIME - TIMER_CONSTANTS.RENDER_RATE * 2 &&
+      !soonSoundPlayed
+    ) {
       this.audioManager.playSoon();
       this.state.soonSoundPlayed = true;
     }
@@ -236,32 +232,16 @@ export class TimerLogic {
    * Handle transition to next phase when current phase ends
    */
   handlePhaseTransition() {
-    const nextPhase = getNextPhase(this.state);
-
     // Set timeLeft to 0 for current phase
     this.state.timeLeft = 0;
 
-    // Play transition sounds immediately
-    switch (this.state.phase) {
-      case TIMER_PHASES.READY:
-        this.audioManager.playStart();
-        break;
-      case TIMER_PHASES.WORK:
-        if (nextPhase === TIMER_PHASES.IDLE) {
-          // Session complete
-          this.audioManager.playFinish();
-          this.reset();
-          return;
-        } else {
-          this.audioManager.playFinish();
-        }
-        break;
-      case TIMER_PHASES.REST:
-        this.audioManager.playStart();
-        break;
+    // Timer complete - play finish sound and reset
+    if (this.state.phase === TIMER_PHASES.WORK) {
+      this.audioManager.playFinish();
+      this.reset();
+      return;
     }
 
-    this.transitionToPhase(nextPhase);
     this.notifySubscribers();
   }
   /**
