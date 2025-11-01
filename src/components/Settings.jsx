@@ -53,6 +53,7 @@ const Settings = () => {
         onClick={handleShow}
         className="settings-btn"
         aria-label="Settings"
+        tabIndex={-1}
       >
         <GearFill />
       </Button>
@@ -71,12 +72,14 @@ const Settings = () => {
                   type="color"
                   value={colors.backgroundColor}
                   onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
+                  tabIndex={-1}
                 />
                 <Form.Control
                   type="text"
                   value={colors.backgroundColor}
                   onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
                   className="ms-2"
+                  tabIndex={-1}
                 />
                 <div 
                   className="ms-2" 
@@ -97,12 +100,14 @@ const Settings = () => {
                   type="color"
                   value={colors.textColor}
                   onChange={(e) => handleColorChange('textColor', e.target.value)}
+                  tabIndex={-1}
                 />
                 <Form.Control
                   type="text"
                   value={colors.textColor}
                   onChange={(e) => handleColorChange('textColor', e.target.value)}
                   className="ms-2"
+                  tabIndex={-1}
                 />
                 <div 
                   className="ms-2" 
@@ -123,12 +128,14 @@ const Settings = () => {
                   type="color"
                   value={colors.currentTimeColor}
                   onChange={(e) => handleColorChange('currentTimeColor', e.target.value)}
+                  tabIndex={-1}
                 />
                 <Form.Control
                   type="text"
                   value={colors.currentTimeColor}
                   onChange={(e) => handleColorChange('currentTimeColor', e.target.value)}
                   className="ms-2"
+                  tabIndex={-1}
                 />
                 <div 
                   className="ms-2" 
@@ -149,12 +156,14 @@ const Settings = () => {
                   type="color"
                   value={colors.restPhaseColor}
                   onChange={(e) => handleColorChange('restPhaseColor', e.target.value)}
+                  tabIndex={-1}
                 />
                 <Form.Control
                   type="text"
                   value={colors.restPhaseColor}
                   onChange={(e) => handleColorChange('restPhaseColor', e.target.value)}
                   className="ms-2"
+                  tabIndex={-1}
                 />
                 <div 
                   className="ms-2" 
@@ -175,12 +184,14 @@ const Settings = () => {
                   type="color"
                   value={colors.endingSoonColor}
                   onChange={(e) => handleColorChange('endingSoonColor', e.target.value)}
+                  tabIndex={-1}
                 />
                 <Form.Control
                   type="text"
                   value={colors.endingSoonColor}
                   onChange={(e) => handleColorChange('endingSoonColor', e.target.value)}
                   className="ms-2"
+                  tabIndex={-1}
                 />
                 <div 
                   className="ms-2" 
@@ -196,7 +207,7 @@ const Settings = () => {
 
             <div className="mt-4">
               <p className="text-muted small mb-2">Restore all colors to their original default values.</p>
-              <Button variant="secondary" onClick={resetColors}>
+              <Button variant="secondary" onClick={resetColors} tabIndex={-1}>
                 Reset to Defaults
               </Button>
             </div>

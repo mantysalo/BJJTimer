@@ -1,24 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { PlayFill, StopFill, ArrowCounterclockwise, DashLg, PlusLg } from 'react-bootstrap-icons';
 import './Timer.css';
-import Settings from './components/Settings';
 import { useTimer } from './hooks/useTimer';
 
 const Timer = () => {
     const { state, actions, formatters, computed } = useTimer();
 
+    // Add global keyboard shortcut for spacebar
+    useEffect(() => {
+        const handleKeyPress = (event) => {
+            // Toggle timer on spacebar press
+            if (event.code === 'Space' || event.key === ' ') {
+                event.preventDefault(); // Prevent scrolling
+                actions.toggle();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyPress);
+        };
+    }, [actions]);
+
     return (
         <Container fluid id="timer" className="round-phase">
-            <Settings />
-            <Row className="justify-content-center my-0">
-                <Col md="auto">
-                    <div className="current-time">
-                        {formatters.formatCurrentTime(state.currentTime)}
-                    </div>
-                </Col>
-            </Row>
-            <Row className="justify-content-center mt-1">
+            <Row className="justify-content-center mt-5">
                 <Col md="auto">
                     <div className="status-display">
                         {computed.getStatusText()}
@@ -33,6 +41,7 @@ const Timer = () => {
                             size="sm" 
                             onClick={() => actions.changeCurrentTime(-1)}
                             className="d-inline-flex align-items-center"
+                            tabIndex={-1}
                         >
                             <DashLg />
                         </Button>
@@ -44,6 +53,7 @@ const Timer = () => {
                             size="sm" 
                             onClick={() => actions.changeCurrentTime(1)}
                             className="d-inline-flex align-items-center"
+                            tabIndex={-1}
                         >
                             <PlusLg />
                         </Button>
@@ -55,20 +65,20 @@ const Timer = () => {
                     <div className="d-flex justify-content-center align-items-center gap-4">
                         <div className="timer-control-group">
                             <label className="me-2">Duration:</label>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(-30)} className="d-inline-flex align-items-center">
+                            <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(-30)} className="d-inline-flex align-items-center" tabIndex={-1}>
                                 <DashLg />
                             </Button>
                             <span className="mx-2">{formatters.formatTime(state.roundTime)}</span>
-                            <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(30)} className="d-inline-flex align-items-center">
+                            <Button variant="secondary" size="sm" onClick={() => actions.changeRoundTime(30)} className="d-inline-flex align-items-center" tabIndex={-1}>
                                 <PlusLg />
                             </Button>
                         </div>
                     </div>
                     <div className="d-flex justify-content-center mt-4">
-                        <Button variant={state.isRunning ? 'danger' : 'success'} onClick={actions.toggle} className="d-flex align-items-center me-3">
+                        <Button variant={state.isRunning ? 'danger' : 'success'} onClick={actions.toggle} className="d-flex align-items-center me-3" tabIndex={-1}>
                             {state.isRunning ? <><StopFill className="me-1" /> Stop</> : <><PlayFill className="me-1" /> Start</>}
                         </Button>
-                        <Button variant="dark" onClick={actions.reset} className="d-flex align-items-center">
+                        <Button variant="dark" onClick={actions.reset} className="d-flex align-items-center" tabIndex={-1}>
                             <ArrowCounterclockwise className="me-1" /> Reset
                         </Button>
                     </div>
